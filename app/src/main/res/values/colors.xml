@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<color name="primaryButton">#7723B3</color>
+<color name="secondaryButton">#070000</color>
+<color name="textHint">#383737</color>
+<color name="white">#FFFFFF</color>
+<color name="highlightDay">#585C62</color>
+    <color name="streak">#9E82DB</color>
+<color name="selectedDay">#B0A4D0</color>
+
+</resources>
+
