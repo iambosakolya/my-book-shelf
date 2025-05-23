@@ -1,84 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="8dp"
     android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="@color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
-
-        <TextView
-            android:id="@+id/textViewBookTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Book Title"
-            android:textColor="@color/primaryButton"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textViewBookAuthor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="By: Author Name"
-            android:textColor="#333333"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/textViewBookDetails"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Progress: 150/300 pages (50%)\nStatus: In Progress"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/textViewLastRead"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Last read: May 10, 2023"
-            android:textColor="#555555"
-            android:textStyle="italic"
-            android:textSize="12sp" />
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnUpdateProgress"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:backgroundTint="@color/primaryButton"
-                android:text="Update Progress"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
+            <ImageView
+                android:id="@+id/imageViewBookCover"
+                android:layout_width="80dp"
+                android:layout_height="120dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="Book cover"
+                android:background="@color/lightGray"
+                app:cornerRadius="8dp"
+                android:visibility="gone" />
 
-            <Button
-                android:id="@+id/btnViewHistory"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:id="@+id/textViewBookTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Book Title"
+                    android:textColor="@color/primaryButton"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:ellipsize="end"
+                    android:maxLines="2" />
+
+                <TextView
+                    android:id="@+id/textViewBookAuthor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="By: Author Name"
+                    android:textColor="@color/darkGray"
+                    android:textSize="14sp"
+                    android:ellipsize="end"
+                    android:maxLines="1" />
+
+                <TextView
+                    android:id="@+id/textViewBookDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Progress: 150/300 pages (50%)\nStatus: In Progress"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/textViewLastRead"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Last read: May 10, 2023"
+                    android:textColor="@color/textHint"
+                    android:textStyle="italic"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <FrameLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUpdateProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="@color/primaryButton"
+                    android:paddingStart="8dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="12dp"
+                    android:text="Edit"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    app:cornerRadius="8dp"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/white" />
+            </FrameLayout>
+
+            <Space
+                android:id="@+id/btnHistorySpace"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:backgroundTint="#4CAF50"
-                android:text="View History"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="@color/primaryButton"
+                    android:paddingStart="8dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="12dp"
+                    android:text="History"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    app:cornerRadius="8dp"
+                    app:icon="@android:drawable/ic_dialog_info"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/white" />
+            </FrameLayout>
 
         </LinearLayout>
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView> 
+</com.google.android.material.card.MaterialCardView> 

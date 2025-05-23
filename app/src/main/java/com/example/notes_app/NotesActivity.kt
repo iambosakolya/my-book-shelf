@@ -29,6 +29,7 @@ class NotesActivity : AppCompatActivity() {
         notesContainer = findViewById(R.id.notesContainer)
         dateDisplayTextView = findViewById(R.id.dateDisplayTextView)
         val btnCreateNote = findViewById<Button>(R.id.btnCreateNote)
+        val btnSearchBooks = findViewById<Button>(R.id.btnSearchBooks)
         val btnBack = findViewById<Button>(R.id.btnBack)
         val btnHome = findViewById<Button>(R.id.btnHome)
 
@@ -48,9 +49,11 @@ class NotesActivity : AppCompatActivity() {
         // Check if selected date is valid (not in the future)
         if (!isDateValid(selectedDate)) {
             btnCreateNote.isEnabled = false
+            btnSearchBooks.isEnabled = false
             Toast.makeText(this, "Cannot add new books for future dates", Toast.LENGTH_SHORT).show()
         } else {
             btnCreateNote.isEnabled = true
+            btnSearchBooks.isEnabled = true
             
             // Check if this is a "mark as read" operation from CalendarActivity
             if (intent.getBooleanExtra("MARK_AS_READ", false)) {
@@ -73,6 +76,18 @@ class NotesActivity : AppCompatActivity() {
             }
 
             val intent = Intent(this, CreateNoteActivity::class.java)
+            intent.putExtra("SELECTED_DATE", selectedDate)
+            startActivity(intent)
+        }
+        
+        btnSearchBooks.setOnClickListener {
+            // Double-check before proceeding
+            if (!isDateValid(selectedDate)) {
+                Toast.makeText(this, "Cannot add books for future dates", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, BookSearchActivity::class.java)
             intent.putExtra("SELECTED_DATE", selectedDate)
             startActivity(intent)
         }

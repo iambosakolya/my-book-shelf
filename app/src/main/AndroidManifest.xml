@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Add internet permission for Google Books API -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".NotesApplication"
         android:allowBackup="true"
@@ -47,6 +50,16 @@
             android:name=".BookHistoryActivity"
             android:exported="false"
             android:parentActivityName=".BookLibraryActivity" />
+            
+        <activity
+            android:name=".MyReviewsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+            
+        <activity
+            android:name=".BookSearchActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
     </application>
 

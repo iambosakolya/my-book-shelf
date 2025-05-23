@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<color name="primaryButton">#7723B3</color>
-<color name="secondaryButton">#070000</color>
-<color name="textHint">#383737</color>
-<color name="white">#FFFFFF</color>
-<color name="highlightDay">#585C62</color>
-    <color name="streak">#9E82DB</color>
-<color name="selectedDay">#B0A4D0</color>
-
+    <!-- Modern color palette -->
+    <color name="primaryButton">#845CA2</color>
+    <color name="primaryButtonVariant">#EE301F56</color>
+    <color name="secondaryButton">#7C7387</color>
+    <color name="secondaryButtonVariant">#371261</color>
+    <color name="textHint">#666666</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="highlightDay">#673AB7</color>
+    <color name="streak">#B392FF</color>
+    <color name="selectedDay">#D1C4E9</color>
+    <color name="cardBackground">#F5F5F5</color>
+    <color name="lightGray">#EEEEEE</color>
+    <color name="darkGray">#424242</color>
+    <color name="errorRed">#B00020</color>
 </resources>
 

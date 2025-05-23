@@ -1,9 +1,11 @@
 package com.example.notes_app
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,6 +43,9 @@ class CreateNoteActivity : AppCompatActivity() {
         val btnClear = findViewById<Button>(R.id.btnClear)
         val btnBack = findViewById<Button>(R.id.btnBack)
         val btnHome = findViewById<Button>(R.id.btnHome)
+
+        // Set RatingBar color programmatically
+        setRatingBarColor(ratingBar)
 
         // Setup reading status spinner
         val readingStatuses = arrayOf("Not Started", "In Progress", "Completed")
@@ -149,7 +154,8 @@ class CreateNoteActivity : AppCompatActivity() {
                 readingStatus,
                 rating.toString(),
                 review,
-                bookDescription
+                bookDescription,
+                ""
             )
 
             // Save the book data
@@ -203,7 +209,8 @@ class CreateNoteActivity : AppCompatActivity() {
         status: String,
         rating: String,
         review: String,
-        description: String
+        description: String,
+        coverImageUrl: String = ""
     ): String {
         // Consistent, standardized format for all book data
         return """
@@ -215,6 +222,7 @@ class CreateNoteActivity : AppCompatActivity() {
             Rating: $rating
             Review: $review
             Description: $description
+            CoverImageUrl: $coverImageUrl
         """.trimIndent()
     }
 
@@ -230,6 +238,7 @@ class CreateNoteActivity : AppCompatActivity() {
         data["rating"] = ""
         data["review"] = ""
         data["description"] = ""
+        data["coverImageUrl"] = ""
         
         note.split("\n").forEach { line ->
             val parts = line.split(":", limit = 2)
@@ -247,6 +256,7 @@ class CreateNoteActivity : AppCompatActivity() {
                     key.equals("Rating", ignoreCase = true) -> data["rating"] = value
                     key.equals("Review", ignoreCase = true) -> data["review"] = value
                     key.equals("Description", ignoreCase = true) -> data["description"] = value
+                    key.equals("CoverImageUrl", ignoreCase = true) -> data["coverImageUrl"] = value
                 }
             }
         }
@@ -270,6 +280,13 @@ class CreateNoteActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             return false
+        }
+    }
+
+    // Helper method to set rating bar color
+    private fun setRatingBarColor(ratingBar: RatingBar) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ratingBar.progressTintList = ContextCompat.getColorStateList(this, R.color.streak)
         }
     }
 }

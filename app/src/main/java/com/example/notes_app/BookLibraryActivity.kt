@@ -2,14 +2,18 @@ package com.example.notes_app
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
+import android.widget.AdapterView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
+import com.bumptech.glide.Glide
 
 class BookLibraryActivity : AppCompatActivity() {
 
@@ -26,6 +30,7 @@ class BookLibraryActivity : AppCompatActivity() {
         // Initialize UI Components
         booksContainer = findViewById(R.id.booksContainer)
         val btnAddNewBook = findViewById<Button>(R.id.btnAddNewBook)
+        val btnMyReviews = findViewById<Button>(R.id.btnMyReviews)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
         // Display all books
@@ -37,6 +42,11 @@ class BookLibraryActivity : AppCompatActivity() {
             val today = dateFormat.format(Date())
             val intent = Intent(this, CreateNoteActivity::class.java)
             intent.putExtra("SELECTED_DATE", today)
+            startActivity(intent)
+        }
+
+        btnMyReviews.setOnClickListener {
+            val intent = Intent(this, MyReviewsActivity::class.java)
             startActivity(intent)
         }
 
@@ -109,6 +119,8 @@ class BookLibraryActivity : AppCompatActivity() {
         val textViewDate = bookView.findViewById<TextView>(R.id.textViewLastRead)
         val btnUpdateProgress = bookView.findViewById<Button>(R.id.btnUpdateProgress)
         val btnViewHistory = bookView.findViewById<Button>(R.id.btnViewHistory)
+        val btnHistorySpace = bookView.findViewById<View>(R.id.btnHistorySpace)
+        val imageViewBookCover = bookView.findViewById<ImageView>(R.id.imageViewBookCover)
 
         // Parse book data
         val parsedData = parseBookData(bookData)
@@ -116,6 +128,18 @@ class BookLibraryActivity : AppCompatActivity() {
         // Display basic book info
         textViewTitle.text = parsedData["title"] ?: "Untitled"
         textViewAuthor.text = "By: ${parsedData["author"] ?: "Unknown"}"
+        
+        // Check if book has cover image URL and set if available
+        val coverImageUrl = parsedData["coverImageUrl"]
+        if (!coverImageUrl.isNullOrEmpty()) {
+            imageViewBookCover.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(coverImageUrl)
+                .placeholder(R.drawable.ic_calendar)
+                .into(imageViewBookCover)
+        } else {
+            imageViewBookCover.visibility = View.GONE
+        }
         
         // Format details
         val pagesInfo = buildString {
@@ -156,7 +180,13 @@ class BookLibraryActivity : AppCompatActivity() {
         }
         
         // Set button visibility based on multiple entries
-        btnViewHistory.visibility = if (hasMultipleEntries) View.VISIBLE else View.GONE
+        if (hasMultipleEntries) {
+            btnViewHistory.visibility = View.VISIBLE
+            btnHistorySpace.visibility = View.GONE
+        } else {
+            btnViewHistory.visibility = View.GONE
+            btnHistorySpace.visibility = View.VISIBLE
+        }
         
         // Set click listeners
         btnUpdateProgress.setOnClickListener {
@@ -180,6 +210,14 @@ class BookLibraryActivity : AppCompatActivity() {
         val spinnerReadingStatus = dialogView.findViewById<Spinner>(R.id.spinnerReadingStatus)
         val textViewDate = dialogView.findViewById<TextView>(R.id.textViewSelectedDate)
         val btnSelectDate = dialogView.findViewById<Button>(R.id.btnSelectDate)
+        val ratingBar = dialogView.findViewById<RatingBar>(R.id.ratingBar)
+        val editTextReview = dialogView.findViewById<EditText>(R.id.editTextReview)
+        val ratingReviewContainer = dialogView.findViewById<LinearLayout>(R.id.ratingReviewContainer)
+        val btnSave = dialogView.findViewById<Button>(R.id.btnSave)
+        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
+        
+        // Set RatingBar color programmatically
+        setRatingBarColor(ratingBar)
         
         // Setup spinner with reading statuses
         val readingStatuses = arrayOf("Not Started", "In Progress", "Completed")
@@ -194,11 +232,22 @@ class BookLibraryActivity : AppCompatActivity() {
         editTextCurrentPage.setText(bookData["currentPage"])
         
         // Set status if available
+        val oldStatus = bookData["status"] ?: ""
         bookData["status"]?.let { status ->
             val position = readingStatuses.indexOf(status)
             if (position >= 0) {
                 spinnerReadingStatus.setSelection(position)
             }
+        }
+        
+        // Set rating if available
+        bookData["rating"]?.toFloatOrNull()?.let { rating ->
+            ratingBar.rating = rating
+        }
+        
+        // Set review if available
+        bookData["review"]?.let { review ->
+            editTextReview.setText(review)
         }
         
         // Set default date to today
@@ -213,52 +262,128 @@ class BookLibraryActivity : AppCompatActivity() {
             }
         }
         
-        // Create dialog
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Update Reading Progress")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                // Update book progress
-                val newCurrentPage = editTextCurrentPage.text.toString()
-                val newStatus = spinnerReadingStatus.selectedItem.toString()
+        // Add status change listener to prompt for rating/review when completing a book
+        spinnerReadingStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedStatus = readingStatuses[position]
                 
-                // Create updated book data
-                val updatedBookData = createUpdatedBookData(originalBookData, newCurrentPage, newStatus)
+                // Show rating/review section when marking as completed or when there's already a review
+                ratingReviewContainer.visibility = if (selectedStatus == "Completed" || 
+                                                     bookData["rating"]?.isNotEmpty() == true || 
+                                                     bookData["review"]?.isNotEmpty() == true) 
+                                                     View.VISIBLE else View.GONE
                 
-                // Save to the selected date
-                notesManager.addNote(selectedDate, updatedBookData)
-                
-                // Mark the day as read
-                readingTracker.markDayAsRead(selectedDate)
-                
-                // Refresh the display
-                displayAllBooks()
-                
-                Toast.makeText(this, "Reading progress updated", Toast.LENGTH_SHORT).show()
+                // If user changes status to Completed, prompt to add a final review
+                if (selectedStatus == "Completed" && oldStatus != "Completed") {
+                    showRatingReviewPrompt(ratingBar, editTextReview)
+                }
             }
-            .setNegativeButton("Cancel", null)
+            
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        
+        // Initially hide or show rating/review section based on status
+        val initialStatus = spinnerReadingStatus.selectedItem.toString()
+        ratingReviewContainer.visibility = if (initialStatus == "Completed" || 
+                                             bookData["rating"]?.isNotEmpty() == true || 
+                                             bookData["review"]?.isNotEmpty() == true) 
+                                             View.VISIBLE else View.GONE
+        
+        // Create dialog with custom view and no buttons (we'll use our own)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
             .create()
         
+        // Set up the custom button click listeners
+        btnSave.setOnClickListener {
+            // Update book progress
+            val newCurrentPage = editTextCurrentPage.text.toString()
+            val newStatus = spinnerReadingStatus.selectedItem.toString()
+            val newRating = ratingBar.rating.toString()
+            val newReview = editTextReview.text.toString()
+            
+            // Create updated book data
+            val updatedBookData = createUpdatedBookData(
+                originalBookData, 
+                newCurrentPage, 
+                newStatus,
+                newRating,
+                newReview
+            )
+            
+            // Save to the selected date
+            notesManager.addNote(selectedDate, updatedBookData)
+            
+            // Mark the day as read
+            readingTracker.markDayAsRead(selectedDate)
+            
+            // Refresh the display
+            displayAllBooks()
+            
+            Toast.makeText(this, "Reading progress updated", Toast.LENGTH_SHORT).show()
+            
+            // Dismiss the dialog
+            dialog.dismiss()
+        }
+        
+        btnCancel.setOnClickListener {
+            // Just dismiss the dialog
+            dialog.dismiss()
+        }
+        
+        // Show the dialog
         dialog.show()
     }
     
-    private fun createUpdatedBookData(originalData: String, newCurrentPage: String, newStatus: String): String {
+    private fun showRatingReviewPrompt(ratingBar: RatingBar, editTextReview: EditText) {
+        AlertDialog.Builder(this)
+            .setTitle("Book Completed!")
+            .setMessage("Would you like to add a final rating and review for this book? This will be saved as your final thoughts about the book.")
+            .setPositiveButton("Yes") { _, _ ->
+                // Focus on the rating/review fields, they're already visible
+                ratingBar.requestFocus()
+            }
+            .setNegativeButton("Not now") { _, _ -> }
+            .setCancelable(false) // User must make a choice
+            .show()
+    }
+    
+    private fun createUpdatedBookData(
+        originalData: String, 
+        newCurrentPage: String, 
+        newStatus: String,
+        newRating: String,
+        newReview: String
+    ): String {
         val data = parseBookData(originalData).toMutableMap()
         
         // Update the fields that changed
         data["currentPage"] = newCurrentPage
         data["status"] = newStatus
+        data["rating"] = newRating
+        data["review"] = newReview
+        
+        // If status changed to Completed, check if pages match total
+        if (newStatus == "Completed") {
+            val totalPages = data["pages"]
+            if (!totalPages.isNullOrEmpty() && totalPages != "0") {
+                // Set current page to total pages if completed
+                data["currentPage"] = totalPages
+            }
+        }
         
         // Format the updated book data
         return formatBookData(
             data["title"] ?: "",
             data["author"] ?: "",
             data["pages"] ?: "",
-            newCurrentPage,
+            data["currentPage"] ?: "",
             newStatus,
-            data["rating"] ?: "",
-            data["review"] ?: "",
-            data["description"] ?: ""
+            newRating,
+            newReview,
+            data["description"] ?: "",
+            data["coverImageUrl"] ?: ""
         )
     }
     
@@ -270,7 +395,8 @@ class BookLibraryActivity : AppCompatActivity() {
         status: String,
         rating: String,
         review: String,
-        description: String
+        description: String,
+        coverImageUrl: String = ""
     ): String {
         // Consistent, standardized format for all book data
         return """
@@ -282,6 +408,7 @@ class BookLibraryActivity : AppCompatActivity() {
             Rating: $rating
             Review: $review
             Description: $description
+            CoverImageUrl: $coverImageUrl
         """.trimIndent()
     }
     
@@ -371,5 +498,12 @@ class BookLibraryActivity : AppCompatActivity() {
             }
         }
         return data
+    }
+
+    // Helper method to set rating bar color
+    private fun setRatingBarColor(ratingBar: RatingBar) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ratingBar.progressTintList = ContextCompat.getColorStateList(this, R.color.streak)
+        }
     }
 } 

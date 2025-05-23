@@ -1,11 +1,17 @@
 package com.example.notes_app
 
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RatingBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -73,51 +79,95 @@ class BookHistoryActivity : AppCompatActivity() {
         } else {
             // Display each entry
             for (entry in bookEntries) {
-                addHistoryEntryView(entry.first, entry.second)
+                addHistoryItemView(entry)
             }
         }
     }
 
-    private fun addHistoryEntryView(date: String, bookData: String) {
-        val entryView = LayoutInflater.from(this).inflate(R.layout.book_history_item, historyContainer, false)
-
-        val textViewDate = entryView.findViewById<TextView>(R.id.textViewHistoryDate)
-        val textViewProgress = entryView.findViewById<TextView>(R.id.textViewHistoryProgress)
-        val textViewStatus = entryView.findViewById<TextView>(R.id.textViewHistoryStatus)
-
-        // Parse book data
-        val parsedData = parseBookData(bookData)
+    private fun addHistoryItemView(entry: Pair<String, String>) {
+        val historyItemView = LayoutInflater.from(this).inflate(R.layout.book_history_item, historyContainer, false)
         
-        // Format date
+        val dateTextView = historyItemView.findViewById<TextView>(R.id.textViewHistoryDate)
+        val detailsTextView = historyItemView.findViewById<TextView>(R.id.textViewHistoryDetails)
+        val reviewContainer = historyItemView.findViewById<LinearLayout>(R.id.reviewContainer)
+        val ratingBar = historyItemView.findViewById<RatingBar>(R.id.ratingBar)
+        val reviewTextView = historyItemView.findViewById<TextView>(R.id.textViewReview)
+        val imageViewBookCover = historyItemView.findViewById<ImageView>(R.id.imageViewBookCover)
+        
+        // Set RatingBar tint programmatically
+        setRatingBarColor(ratingBar)
+        
+        // Format the date
+        val displayDate = formatDisplayDate(entry.first)
+        dateTextView.text = displayDate
+        
+        // Parse the book data
+        val bookData = parseBookData(entry.second)
+        
+        // Display cover image if available
+        val coverImageUrl = bookData["coverImageUrl"]
+        if (!coverImageUrl.isNullOrEmpty()) {
+            imageViewBookCover.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(coverImageUrl)
+                .placeholder(R.drawable.ic_calendar)
+                .into(imageViewBookCover)
+        } else {
+            imageViewBookCover.visibility = View.GONE
+        }
+        
+        // Format the details text
+        val details = buildString {
+            val currentPage = bookData["currentPage"]
+            val totalPages = bookData["pages"]
+            val status = bookData["status"]
+            
+            if (!currentPage.isNullOrEmpty() && !totalPages.isNullOrEmpty()) {
+                append("Progress: $currentPage/$totalPages pages")
+                
+                // Calculate percentage if possible
+                try {
+                    val current = currentPage.toInt()
+                    val total = totalPages.toInt()
+                    if (total > 0) {
+                        val percentage = (current.toFloat() / total * 100).toInt()
+                        append(" ($percentage%)")
+                    }
+                } catch (e: Exception) {
+                    // Skip percentage if calculation fails
+                }
+                
+                append("\n")
+            }
+            
+            if (!status.isNullOrEmpty()) {
+                append("Status: $status")
+            }
+        }
+        detailsTextView.text = details
+        
+        // Show review if available
+        val rating = bookData["rating"]?.toFloatOrNull() ?: 0f
+        val review = bookData["review"] ?: ""
+        
+        if (rating > 0 || review.isNotEmpty()) {
+            reviewContainer.visibility = View.VISIBLE
+            ratingBar.rating = rating
+            reviewTextView.text = review.ifEmpty { "No review provided" }
+        } else {
+            reviewContainer.visibility = View.GONE
+        }
+        
+        historyContainer.addView(historyItemView)
+    }
+
+    private fun formatDisplayDate(date: String): String {
         try {
             val parsedDate = dateFormat.parse(date)
-            textViewDate.text = displayDateFormat.format(parsedDate!!)
+            return displayDateFormat.format(parsedDate!!)
         } catch (e: Exception) {
-            textViewDate.text = date
+            return date
         }
-        
-        // Set progress
-        val currentPage = parsedData["currentPage"] ?: "0"
-        val totalPages = parsedData["pages"] ?: "0"
-        
-        if (totalPages != "0") {
-            try {
-                val current = currentPage.toInt()
-                val total = totalPages.toInt()
-                val percentage = if (total > 0) (current.toFloat() / total * 100).toInt() else 0
-                textViewProgress.text = "$currentPage/$totalPages pages ($percentage%)"
-            } catch (e: Exception) {
-                textViewProgress.text = "$currentPage/$totalPages pages"
-            }
-        } else {
-            textViewProgress.text = "Current page: $currentPage"
-        }
-        
-        // Set status
-        val status = parsedData["status"] ?: "Unknown"
-        textViewStatus.text = "Status: $status"
-
-        historyContainer.addView(entryView)
     }
 
     private fun parseBookData(note: String): Map<String, String> {
@@ -132,6 +182,7 @@ class BookHistoryActivity : AppCompatActivity() {
         data["rating"] = ""
         data["review"] = ""
         data["description"] = ""
+        data["coverImageUrl"] = ""
         
         note.split("\n").forEach { line ->
             try {
@@ -158,6 +209,8 @@ class BookHistoryActivity : AppCompatActivity() {
                             data["review"] = value
                         key.equals("Description", ignoreCase = true) -> 
                             data["description"] = value
+                        key.equals("Cover Image URL", ignoreCase = true) -> 
+                            data["coverImageUrl"] = value
                     }
                 }
             } catch (e: Exception) {
@@ -165,5 +218,12 @@ class BookHistoryActivity : AppCompatActivity() {
             }
         }
         return data
+    }
+
+    // Helper method to set rating bar color
+    private fun setRatingBarColor(ratingBar: RatingBar) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ratingBar.progressTintList = ContextCompat.getColorStateList(this, R.color.streak)
+        }
     }
 } 

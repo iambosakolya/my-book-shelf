@@ -12,7 +12,7 @@
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:padding="16dp"
-        android:text="My Books Library 📚"
+        android:text="My Books Library"
         android:textColor="@color/primaryButton"
         android:textSize="24sp"
         android:textStyle="bold" />
@@ -34,30 +34,45 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_marginTop="16dp">
 
         <Button
-            android:id="@+id/btnAddNewBook"
-            android:layout_width="0dp"
+            android:id="@+id/btnMyReviews"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:backgroundTint="@color/primaryButton"
             android:padding="12dp"
-            android:text="Add New Book"
-            android:textColor="@color/white" />
+            android:text="My Book Reviews"
+            android:textColor="@color/white"
+            android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/btnBack"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:backgroundTint="@color/textHint"
-            android:padding="12dp"
-            android:text="Back"
-            android:textColor="@color/white" />
+            android:orientation="horizontal">
 
+            <Button
+                android:id="@+id/btnAddNewBook"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="@color/primaryButton"
+                android:padding="12dp"
+                android:text="Add New Book"
+                android:textColor="@color/white" />
+
+            <Button
+                android:id="@+id/btnBack"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="@color/textHint"
+                android:padding="12dp"
+                android:text="Back"
+                android:textColor="@color/white" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout> 

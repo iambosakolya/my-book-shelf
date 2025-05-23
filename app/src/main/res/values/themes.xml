@@ -1,9 +1,75 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Notes_app" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Customize theme colors -->
+        <item name="colorPrimary">@color/primaryButton</item>
+        <item name="colorPrimaryVariant">@color/primaryButtonVariant</item>
+        <item name="colorSecondary">@color/secondaryButton</item>
+        <item name="colorSecondaryVariant">@color/secondaryButtonVariant</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorError">@color/errorRed</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorOnBackground">@color/black</item>
+        <item name="colorOnSurface">@color/black</item>
+        <item name="colorOnError">@color/white</item>
+        
+        <!-- Typography -->
+        <item name="textAppearanceHeadline1">@style/TextAppearance.ModernApp.Headline1</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.ModernApp.Headline2</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.ModernApp.Body1</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.ModernApp.Body2</item>
+        <item name="textAppearanceButton">@style/TextAppearance.ModernApp.Button</item>
+        
+        <!-- Shape -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.ModernApp.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.ModernApp.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.ModernApp.LargeComponent</item>
     </style>
 
     <style name="Theme.Notes_app" parent="Base.Theme.Notes_app" />
+    
+    <!-- Typography styles -->
+    <style name="TextAppearance.ModernApp.Headline1" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="fontFamily">sans-serif-light</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    
+    <style name="TextAppearance.ModernApp.Headline2" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.ModernApp.Body1" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.ModernApp.Body2" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.ModernApp.Button" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    
+    <!-- Shape styles -->
+    <style name="ShapeAppearance.ModernApp.SmallComponent" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    
+    <style name="ShapeAppearance.ModernApp.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    
+    <style name="ShapeAppearance.ModernApp.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
 </resources>
