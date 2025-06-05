@@ -69,7 +69,7 @@ class CreateNoteActivity : AppCompatActivity() {
         // Get selected date from intent or use today's date
         selectedDate = intent.getStringExtra("SELECTED_DATE") ?:
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        
+
         // Check if we're in edit mode
         bookId = intent.getLongExtra("BOOK_ID", -1L)
         val editNote = intent.getStringExtra("EDIT_NOTE")
@@ -114,7 +114,7 @@ class CreateNoteActivity : AppCompatActivity() {
             // Legacy edit mode with string data
             isEditMode = true
             noteIndex = intent.getIntExtra("NOTE_INDEX", -1)
-            
+
             // Parse book data from the note format
             try {
                 val bookData = parseBookData(editNote)
@@ -205,7 +205,7 @@ class CreateNoteActivity : AppCompatActivity() {
                             review = review,
                             description = bookDescription
                         )
-                    } else {
+            } else {
                         // Add new book
                         Log.d("CreateNoteActivity", "Adding new book: $bookTitle")
                         bookViewModel.addBook(
@@ -239,12 +239,12 @@ class CreateNoteActivity : AppCompatActivity() {
                         Toast.makeText(this@CreateNoteActivity, 
                             if (isEditMode) "Book updated" else "Book saved", 
                             Toast.LENGTH_SHORT).show()
-                            
+
                         // Navigate back
                         val intent = Intent(this@CreateNoteActivity, NotesActivity::class.java)
-                        intent.putExtra("SELECTED_DATE", selectedDate)
-                        startActivity(intent)
-                        finish()
+            intent.putExtra("SELECTED_DATE", selectedDate)
+            startActivity(intent)
+            finish()
                     }
                 } catch (e: Exception) {
                     Log.e("CreateNoteActivity", "Error saving book: ${e.message}")
