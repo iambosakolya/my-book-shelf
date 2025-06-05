@@ -12,36 +12,36 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
+    android:orientation="vertical"
             android:padding="24dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:padding="16dp"
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:padding="16dp"
                 android:text="MyBookShelf"
-                android:textColor="@color/primaryButton"
+        android:textColor="@color/primaryButton"
                 android:textSize="32sp"
-                android:textStyle="bold" />
+        android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/currentDateView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+    <TextView
+        android:id="@+id/currentDateView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:text="Current date"
-                android:textColor="@color/textHint"
-                android:textSize="18sp" />
+        android:gravity="center"
+        android:text="Current date"
+        android:textColor="@color/textHint"
+        android:textSize="18sp" />
 
             <androidx.cardview.widget.CardView
                 android:layout_width="140dp"
                 android:layout_height="140dp"
-                android:layout_gravity="center"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="32dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"
                 app:cardCornerRadius="70dp"
                 app:cardElevation="4dp"
                 app:cardBackgroundColor="@color/lightGray">
@@ -54,29 +54,29 @@
                     android:src="@drawable/ic_calendar" />
             </androidx.cardview.widget.CardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:gravity="center"
+        android:gravity="center"
                 android:text="Track your reading journey"
-                android:textColor="@color/textHint"
+        android:textColor="@color/textHint"
                 android:textStyle="italic"
                 android:textSize="16sp" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMyLibrary"
-                android:layout_width="match_parent"
+        android:id="@+id/btnMyLibrary"
+        android:layout_width="match_parent"
                 android:layout_height="64dp"
                 android:layout_marginTop="32dp"
-                android:backgroundTint="@color/primaryButton"
+        android:backgroundTint="@color/primaryButton"
                 android:paddingTop="12dp"
                 android:paddingBottom="12dp"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:text="My Book Library"
+        android:text="My Book Library"
                 android:textAllCaps="false"
-                android:textColor="@color/white"
+        android:textColor="@color/white"
                 android:textSize="16sp"
                 app:cornerRadius="8dp"
                 app:icon="@android:drawable/ic_dialog_info"
@@ -86,17 +86,17 @@
                 app:iconTint="@color/white" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenCalendar"
-                android:layout_width="match_parent"
+        android:id="@+id/btnOpenCalendar"
+        android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="@color/primaryButton"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/primaryButton"
                 android:paddingTop="12dp"
                 android:paddingBottom="12dp"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:text="View Calendar"
-                android:textColor="@color/white"
+        android:textColor="@color/white"
                 android:textAllCaps="false"
                 android:textSize="16sp"
                 app:cornerRadius="8dp"
@@ -107,10 +107,10 @@
                 app:iconSize="24dp" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCreateNote"
-                android:layout_width="match_parent"
+        android:id="@+id/btnCreateNote"
+        android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:layout_marginTop="16dp"
+        android:layout_marginTop="16dp"
                 android:backgroundTint="@color/selectedDay"
                 android:paddingTop="12dp"
                 android:paddingBottom="12dp"
@@ -136,6 +136,6 @@
                 android:textColor="@color/textHint"
                 android:textSize="14sp" />
 
-        </LinearLayout>
+</LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

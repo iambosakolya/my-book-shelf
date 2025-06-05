@@ -149,8 +149,24 @@
                     app:iconSize="18dp"
                     app:iconTint="@color/white" />
             </FrameLayout>
-
         </LinearLayout>
+        
+        <!-- Delete Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteBookItem"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#E98D8D"
+            android:text="Delete Book"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white" />
 
     </LinearLayout>
 

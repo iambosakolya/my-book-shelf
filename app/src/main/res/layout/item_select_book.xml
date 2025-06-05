@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/item_selector"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:id="@+id/textViewBookTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Book Title"
+        android:textColor="@color/primaryButton"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/textViewBookAuthor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="By: Author Name"
+        android:textColor="@color/darkGray"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/textViewBookDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Progress: 150/300 pages (50%)\nStatus: In Progress"
+        android:textSize="12sp"
+        android:textColor="@color/textHint"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout> 

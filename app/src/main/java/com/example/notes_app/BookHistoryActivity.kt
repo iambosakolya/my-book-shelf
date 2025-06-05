@@ -86,14 +86,14 @@ class BookHistoryActivity : AppCompatActivity() {
 
     private fun addHistoryItemView(entry: Pair<String, String>) {
         val historyItemView = LayoutInflater.from(this).inflate(R.layout.book_history_item, historyContainer, false)
-        
+
         val dateTextView = historyItemView.findViewById<TextView>(R.id.textViewHistoryDate)
         val detailsTextView = historyItemView.findViewById<TextView>(R.id.textViewHistoryDetails)
         val reviewContainer = historyItemView.findViewById<LinearLayout>(R.id.reviewContainer)
         val ratingBar = historyItemView.findViewById<RatingBar>(R.id.ratingBar)
         val reviewTextView = historyItemView.findViewById<TextView>(R.id.textViewReview)
         val imageViewBookCover = historyItemView.findViewById<ImageView>(R.id.imageViewBookCover)
-        
+
         // Set RatingBar tint programmatically
         setRatingBarColor(ratingBar)
         
@@ -121,19 +121,19 @@ class BookHistoryActivity : AppCompatActivity() {
             val currentPage = bookData["currentPage"]
             val totalPages = bookData["pages"]
             val status = bookData["status"]
-            
+        
             if (!currentPage.isNullOrEmpty() && !totalPages.isNullOrEmpty()) {
                 append("Progress: $currentPage/$totalPages pages")
                 
                 // Calculate percentage if possible
-                try {
-                    val current = currentPage.toInt()
-                    val total = totalPages.toInt()
+            try {
+                val current = currentPage.toInt()
+                val total = totalPages.toInt()
                     if (total > 0) {
                         val percentage = (current.toFloat() / total * 100).toInt()
                         append(" ($percentage%)")
                     }
-                } catch (e: Exception) {
+            } catch (e: Exception) {
                     // Skip percentage if calculation fails
                 }
                 
@@ -157,14 +157,14 @@ class BookHistoryActivity : AppCompatActivity() {
         } else {
             reviewContainer.visibility = View.GONE
         }
-        
+
         historyContainer.addView(historyItemView)
     }
 
     private fun formatDisplayDate(date: String): String {
         try {
             val parsedDate = dateFormat.parse(date)
-            return displayDateFormat.format(parsedDate!!)
+            return com.example.notes_app.data.Converters.formatDateForDisplay(parsedDate)
         } catch (e: Exception) {
             return date
         }

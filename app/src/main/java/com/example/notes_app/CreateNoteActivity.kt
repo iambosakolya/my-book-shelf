@@ -3,9 +3,16 @@ package com.example.notes_app
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.example.notes_app.data.Book
+import com.example.notes_app.ui.BookViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -21,13 +28,19 @@ class CreateNoteActivity : AppCompatActivity() {
     private lateinit var ratingBar: RatingBar
     private lateinit var selectedDate: String
     private lateinit var dateDisplayTextView: TextView
+    private lateinit var bookViewModel: BookViewModel
+    
     private var isEditMode = false
+    private var bookId: Long = -1L
     private var noteIndex = -1
-    private val notesManager = NotesManager.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_note)
+
+        // Initialize ViewModel
+        bookViewModel = ViewModelProvider(this)[BookViewModel::class.java]
+        Log.d("CreateNoteActivity", "ViewModel initialized")
 
         // Initialize UI Components
         editTextNote = findViewById(R.id.editTextNote)
@@ -56,25 +69,53 @@ class CreateNoteActivity : AppCompatActivity() {
         // Get selected date from intent or use today's date
         selectedDate = intent.getStringExtra("SELECTED_DATE") ?:
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-        // Validate the date is not in the future
-        if (!isDateValid(selectedDate)) {
-            Toast.makeText(this, "Cannot add books for future dates", Toast.LENGTH_LONG).show()
-            // Return to main activity
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-            startActivity(intent)
-            finish()
-            return
-        }
-
+        
         // Check if we're in edit mode
+        bookId = intent.getLongExtra("BOOK_ID", -1L)
         val editNote = intent.getStringExtra("EDIT_NOTE")
-        if (editNote != null) {
+        
+        if (bookId != -1L) {
+            // We have a valid book ID to edit
+            isEditMode = true
+            
+            // Get book by ID - we'll use the repository directly to avoid LiveData issues
+            lifecycleScope.launch(Dispatchers.Main) {
+                try {
+                    val app = application as NotesApplication
+                    val book = app.database.bookDao().getBookByIdDirect(bookId)
+                    
+                    if (book != null) {
+                        Log.d("CreateNoteActivity", "Editing book: ${book.title}, ID: ${book.id}")
+                        editTextBookTitle.setText(book.title)
+                        editTextBookAuthor.setText(book.author)
+                        editTextBookPages.setText(book.totalPages.toString())
+                        editTextCurrentPage.setText(book.currentPage.toString())
+                        editTextReview.setText(book.review)
+                        editTextNote.setText(book.description)
+                        ratingBar.rating = book.rating
+                        
+                        // Set reading status if available
+                        val position = readingStatuses.indexOf(book.status)
+                        if (position >= 0) {
+                            spinnerReadingStatus.setSelection(position)
+                        }
+                    } else {
+                        Log.e("CreateNoteActivity", "Book not found with ID: $bookId")
+                        Toast.makeText(this@CreateNoteActivity, "Error: Book not found", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                } catch (e: Exception) {
+                    Log.e("CreateNoteActivity", "Error loading book: ${e.message}")
+                    Toast.makeText(this@CreateNoteActivity, "Error loading book: ${e.message}", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        } else if (editNote != null) {
+            // Legacy edit mode with string data
             isEditMode = true
             noteIndex = intent.getIntExtra("NOTE_INDEX", -1)
-
-            // Parse book data from the note format if in edit mode
+            
+            // Parse book data from the note format
             try {
                 val bookData = parseBookData(editNote)
                 editTextBookTitle.setText(bookData["title"])
@@ -135,7 +176,8 @@ class CreateNoteActivity : AppCompatActivity() {
             val totalPages = bookPages.toIntOrNull() ?: 0
             val currentPageNum = currentPage.toIntOrNull() ?: 0
             if (totalPages > 0 && currentPageNum > totalPages) {
-                Toast.makeText(this, "Current page cannot be greater than total pages", Toast.LENGTH_SHORT).show()
+                Log.d("BookUpdate", "Validation failed: $currentPageNum > $totalPages")
+                Toast.makeText(this, "Current page ($currentPageNum) cannot exceed total pages ($totalPages)", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -145,37 +187,77 @@ class CreateNoteActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Format book data into a structured string
-            val bookData = formatBookData(
-                bookTitle,
-                bookAuthor,
-                bookPages,
-                currentPage,
-                readingStatus,
-                rating.toString(),
-                review,
-                bookDescription,
-                ""
-            )
-
-            // Save the book data
-            if (isEditMode && noteIndex >= 0) {
-                notesManager.updateNote(selectedDate, noteIndex, bookData)
-                Toast.makeText(this, "Book updated", Toast.LENGTH_SHORT).show()
-            } else {
-                notesManager.addNote(selectedDate, bookData)
-                
-                // Also mark this day as a reading day for streak tracking
-                ReadingTrackerManager.getInstance().markDayAsRead(selectedDate)
-                
-                Toast.makeText(this, "Book saved", Toast.LENGTH_SHORT).show()
+            // Save using only Room database via ViewModel
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    // Check if we're in edit mode with a valid book ID
+                    if (isEditMode && bookId != -1L) {
+                        // Update existing book
+                        Log.d("CreateNoteActivity", "Updating existing book with ID: $bookId")
+                        bookViewModel.updateBook(
+                            bookId = bookId,
+                            title = bookTitle,
+                            author = bookAuthor,
+                            totalPages = totalPages,
+                            currentPage = currentPageNum,
+                            status = readingStatus,
+                            rating = rating,
+                            review = review,
+                            description = bookDescription
+                        )
+                    } else {
+                        // Add new book
+                        Log.d("CreateNoteActivity", "Adding new book: $bookTitle")
+                        bookViewModel.addBook(
+                            title = bookTitle,
+                            author = bookAuthor,
+                            totalPages = totalPages,
+                            currentPage = currentPageNum,
+                            status = readingStatus,
+                            rating = rating,
+                            review = review,
+                            description = bookDescription,
+                            coverImageUrl = ""
+                        )
+                        Log.d("CreateNoteActivity", "New book added")
+                    }
+                    
+                    // Update reading streak for the selected date
+                    bookViewModel.updateReadingStreak(selectedDate)
+                    
+                    // Debug: Check the database status
+                    try {
+                        val dbDao = (application as NotesApplication).database.bookDao()
+                        val count = dbDao.getBooksCount()
+                        Log.d("CreateNoteActivity", "Database now contains $count books")
+                    } catch (e: Exception) {
+                        Log.e("CreateNoteActivity", "Error getting book count: ${e.message}")
+                    }
+                    
+                    // Return to the main thread to show success message
+                    runOnUiThread {
+                        Toast.makeText(this@CreateNoteActivity, 
+                            if (isEditMode) "Book updated" else "Book saved", 
+                            Toast.LENGTH_SHORT).show()
+                            
+                        // Navigate back
+                        val intent = Intent(this@CreateNoteActivity, NotesActivity::class.java)
+                        intent.putExtra("SELECTED_DATE", selectedDate)
+                        startActivity(intent)
+                        finish()
+                    }
+                } catch (e: Exception) {
+                    Log.e("CreateNoteActivity", "Error saving book: ${e.message}")
+                    e.printStackTrace()
+                    
+                    // Show error on main thread
+                    runOnUiThread {
+                        Toast.makeText(this@CreateNoteActivity, 
+                            "Error saving book: ${e.message}", 
+                            Toast.LENGTH_LONG).show()
+                    }
+                }
             }
-
-            // Return to NotesActivity
-            val intent = Intent(this, NotesActivity::class.java)
-            intent.putExtra("SELECTED_DATE", selectedDate)
-            startActivity(intent)
-            finish()
         }
 
         btnClear.setOnClickListener {

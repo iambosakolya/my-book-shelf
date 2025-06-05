@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -21,13 +22,16 @@ import com.bumptech.glide.Glide
 import com.example.notes_app.api.BookAdapter
 import com.example.notes_app.api.BookItem
 import com.example.notes_app.api.GoogleBooksViewModel
+import com.example.notes_app.ui.BookViewModel
 import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 class BookSearchActivity : AppCompatActivity() {
     private lateinit var viewModel: GoogleBooksViewModel
+    private lateinit var bookViewModel: BookViewModel
     private lateinit var editTextSearch: EditText
     private lateinit var btnSearch: Button
     private lateinit var progressBar: ProgressBar
@@ -37,6 +41,7 @@ class BookSearchActivity : AppCompatActivity() {
     private lateinit var btnBack: Button
     
     private lateinit var selectedDate: String
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
     private val bookAdapter by lazy {
         BookAdapter(
@@ -56,8 +61,9 @@ class BookSearchActivity : AppCompatActivity() {
         // Get selected date from intent
         selectedDate = intent.getStringExtra("SELECTED_DATE") ?: SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         
-        // Initialize ViewModel
+        // Initialize ViewModels
         viewModel = ViewModelProvider(this)[GoogleBooksViewModel::class.java]
+        bookViewModel = ViewModelProvider(this)[BookViewModel::class.java]
         
         // Initialize UI components
         editTextSearch = findViewById(R.id.editTextSearch)
@@ -139,30 +145,59 @@ class BookSearchActivity : AppCompatActivity() {
     private fun addBookToLibrary(book: BookItem) {
         val volumeInfo = book.volumeInfo ?: return
         
-        // Get the book cover image URL (use https instead of http)
-        val coverImageUrl = volumeInfo.imageLinks?.thumbnail?.replace("http:", "https:") ?: ""
-        
-        // Create a formatted book data string in the same format as manual entry
-        val formattedBookData = """
-            Title: ${volumeInfo.title}
-            Author: ${volumeInfo.authors?.joinToString(", ") ?: "Unknown Author"}
-            Total Pages: ${volumeInfo.pageCount ?: "0"}
-            Current Page: 0
-            Status: Not Started
-            Rating: 0
-            Review: 
-            Description: ${volumeInfo.description?.take(300) ?: "No description available"}
-            CoverImageUrl: $coverImageUrl
-        """.trimIndent()
-        
-        // Save the book data using the NotesManager
-        val notesManager = NotesManager.getInstance()
-        notesManager.addNote(selectedDate, formattedBookData)
-        
-        // Mark the day as read for streak tracking
-        ReadingTrackerManager.getInstance().markDayAsRead(selectedDate)
-        
-        Toast.makeText(this, "${volumeInfo.title} added to your library", Toast.LENGTH_SHORT).show()
+        try {
+            // Get the book cover image URL (use https instead of http)
+            val coverImageUrl = volumeInfo.imageLinks?.thumbnail?.replace("http:", "https:") ?: ""
+            
+            // Get page count as Int - handle properly based on the type
+            val pageCount = volumeInfo.pageCount ?: 0
+            
+            // Add the book to Room database
+            val bookId = bookViewModel.addBook(
+                title = volumeInfo.title ?: "Unknown Title",
+                author = volumeInfo.authors?.joinToString(", ") ?: "Unknown Author",
+                totalPages = pageCount,
+                currentPage = 0,
+                status = "Not Started",
+                rating = 0f,
+                review = "",
+                description = volumeInfo.description?.take(300) ?: "No description available",
+                coverImageUrl = coverImageUrl
+            )
+            
+            Log.d("BookSearchActivity", "Added book with ID: $bookId")
+            
+            // Now record that this book was read on the selected date
+            // Parse the selected date
+            val parsedDate = dateFormat.parse(selectedDate)
+            
+            if (parsedDate != null) {
+                val calendar = Calendar.getInstance()
+                calendar.time = parsedDate
+                
+                // The bookId returned by addBook might not be used correctly,
+                // so we'll query the database for the book we just added
+                bookViewModel.searchBooks(volumeInfo.title ?: "").observe(this) { books ->
+                    if (books.isNotEmpty()) {
+                        val addedBook = books.firstOrNull { it.title == volumeInfo.title }
+                        if (addedBook != null) {
+                            // Add a reading entry for this book on the selected date
+                            bookViewModel.updateBookProgress(
+                                bookId = addedBook.id,
+                                currentPage = 0,
+                                status = "Not Started",
+                                date = calendar.time
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Toast.makeText(this, "${volumeInfo.title} added to your library", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e("BookSearchActivity", "Error adding book: ${e.message}")
+            Toast.makeText(this, "Error adding book: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun showBookDetailsDialog(book: BookItem) {

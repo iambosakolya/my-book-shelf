@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:backgroundTint="@color/primaryButton"
-            android:text="Fix"
+            android:text="Edit"
             android:textColor="@color/white"
             android:textSize="16sp" />
 
@@ -42,18 +42,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/selectedDay"
-            android:text="X"
+            android:text="Delete"
             android:textColor="@color/white"
             android:textSize="16sp" />
 
-        <Button
-            android:id="@+id/btnSelectNote"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@color/primaryButton"
-            android:text="Select"
-            android:textColor="@color/white"
-            android:textSize="13sp" />
     </LinearLayout>
 
 </LinearLayout>

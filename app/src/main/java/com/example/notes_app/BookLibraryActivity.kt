@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
@@ -11,15 +12,20 @@ import android.widget.AdapterView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.example.notes_app.data.Book
+import com.example.notes_app.ui.BookViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import com.bumptech.glide.Glide
 
 class BookLibraryActivity : AppCompatActivity() {
 
     private lateinit var booksContainer: LinearLayout
-    private val notesManager = NotesManager.getInstance()
-    private val readingTracker = ReadingTrackerManager.getInstance()
+    private lateinit var bookViewModel: BookViewModel
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val displayDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
@@ -27,14 +33,19 @@ class BookLibraryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_library)
 
+        // Initialize ViewModel
+        bookViewModel = ViewModelProvider(this)[BookViewModel::class.java]
+
         // Initialize UI Components
         booksContainer = findViewById(R.id.booksContainer)
         val btnAddNewBook = findViewById<Button>(R.id.btnAddNewBook)
         val btnMyReviews = findViewById<Button>(R.id.btnMyReviews)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        // Display all books
-        displayAllBooks()
+        // Observe books
+        bookViewModel.allBooks.observe(this) { books ->
+            displayBooks(books)
+        }
 
         // Set click listeners for buttons
         btnAddNewBook.setOnClickListener {
@@ -57,60 +68,49 @@ class BookLibraryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh books when returning to this activity
-        displayAllBooks()
-    }
-
-    private fun displayAllBooks() {
-        booksContainer.removeAllViews()
-
-        // Get all dates with notes
-        val datesWithNotes = notesManager.getDatesWithNotes()
+        Log.d("BookLibraryActivity", "onResume called")
         
-        // Create a list to store all books with their dates
-        val allBooks = mutableListOf<Pair<String, String>>() // Pair<Date, BookData>
-        
-        // Collect all books
-        for (date in datesWithNotes) {
-            val notes = notesManager.getNotesForDate(date)
-            for (note in notes) {
-                allBooks.add(Pair(date, note))
+        // Test database access in onResume
+        val application = application as NotesApplication
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val count = application.database.bookDao().getBooksCount()
+                Log.d("BookLibraryActivity", "Database contains $count books")
+                
+                // If no books yet, add a test book
+                if (count == 0) {
+                    Log.d("BookLibraryActivity", "Adding a test book")
+                    bookViewModel.addBook(
+                        title = "Test Book",
+                        author = "Test Author",
+                        totalPages = 100
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("BookLibraryActivity", "Error accessing database: ${e.message}")
+                e.printStackTrace()
             }
         }
+    }
+
+    private fun displayBooks(books: List<Book>) {
+        booksContainer.removeAllViews()
         
-        if (allBooks.isEmpty()) {
+        if (books.isEmpty()) {
             val emptyView = TextView(this)
             emptyView.text = "No books in your library yet"
             emptyView.textSize = 16f
             emptyView.setPadding(16, 16, 16, 16)
             booksContainer.addView(emptyView)
         } else {
-            // Group books by title to avoid duplicates
-            val booksByTitle = mutableMapOf<String, MutableList<Pair<String, String>>>()
-            
-            for (bookData in allBooks) {
-                val data = parseBookData(bookData.second)
-                val title = data["title"] ?: "Untitled"
-                
-                if (!booksByTitle.containsKey(title)) {
-                    booksByTitle[title] = mutableListOf()
-                }
-                
-                booksByTitle[title]?.add(bookData)
-            }
-            
-            // Display each unique book
-            for ((title, bookEntries) in booksByTitle) {
-                // Get the most recent entry for this book
-                val latestEntry = bookEntries.maxByOrNull { it.first }
-                if (latestEntry != null) {
-                    addBookView(latestEntry.first, latestEntry.second, bookEntries.size > 1)
-                }
+            // Display each book
+            for (book in books) {
+                addBookView(book)
             }
         }
     }
 
-    private fun addBookView(date: String, bookData: String, hasMultipleEntries: Boolean) {
+    private fun addBookView(book: Book) {
         val bookView = LayoutInflater.from(this).inflate(R.layout.book_library_item, booksContainer, false)
 
         val textViewTitle = bookView.findViewById<TextView>(R.id.textViewBookTitle)
@@ -119,22 +119,19 @@ class BookLibraryActivity : AppCompatActivity() {
         val textViewDate = bookView.findViewById<TextView>(R.id.textViewLastRead)
         val btnUpdateProgress = bookView.findViewById<Button>(R.id.btnUpdateProgress)
         val btnViewHistory = bookView.findViewById<Button>(R.id.btnViewHistory)
+        val btnDeleteBook = bookView.findViewById<Button>(R.id.btnDeleteBookItem)
         val btnHistorySpace = bookView.findViewById<View>(R.id.btnHistorySpace)
         val imageViewBookCover = bookView.findViewById<ImageView>(R.id.imageViewBookCover)
-
-        // Parse book data
-        val parsedData = parseBookData(bookData)
         
         // Display basic book info
-        textViewTitle.text = parsedData["title"] ?: "Untitled"
-        textViewAuthor.text = "By: ${parsedData["author"] ?: "Unknown"}"
+        textViewTitle.text = book.title
+        textViewAuthor.text = "By: ${book.author}"
         
         // Check if book has cover image URL and set if available
-        val coverImageUrl = parsedData["coverImageUrl"]
-        if (!coverImageUrl.isNullOrEmpty()) {
+        if (book.coverImageUrl.isNotEmpty()) {
             imageViewBookCover.visibility = View.VISIBLE
             Glide.with(this)
-                .load(coverImageUrl)
+                .load(book.coverImageUrl)
                 .placeholder(R.drawable.ic_calendar)
                 .into(imageViewBookCover)
         } else {
@@ -143,68 +140,55 @@ class BookLibraryActivity : AppCompatActivity() {
         
         // Format details
         val pagesInfo = buildString {
-            val totalPages = parsedData["pages"] ?: ""
-            val currentPage = parsedData["currentPage"] ?: ""
-            val status = parsedData["status"] ?: ""
-            
-            if (totalPages.isNotEmpty() && currentPage.isNotEmpty()) {
-                append("Progress: $currentPage/$totalPages pages")
+            append("Progress: ${book.currentPage}/${book.totalPages} pages")
                 
                 // Calculate percentage if possible
-                try {
-                    val current = currentPage.toInt()
-                    val total = totalPages.toInt()
-                    if (total > 0) {
-                        val percentage = (current.toFloat() / total * 100).toInt()
+            if (book.totalPages > 0) {
+                val percentage = (book.currentPage.toFloat() / book.totalPages * 100).toInt()
                         append(" ($percentage%)")
                     }
-                } catch (e: Exception) {
-                    // Skip percentage if calculation fails
-                }
-                
-                append("\n")
-            }
             
-            if (status.isNotEmpty()) {
-                append("Status: $status")
-            }
+            append("\nStatus: ${book.status}")
         }
         textViewDetails.text = pagesInfo
         
-        // Format date
-        try {
-            val parsedDate = dateFormat.parse(date)
-            textViewDate.text = "Last read: ${displayDateFormat.format(parsedDate!!)}"
-        } catch (e: Exception) {
-            textViewDate.text = "Last read: $date"
-        }
+        // Format date using the new formatter from Converters
+        textViewDate.text = "Last read: ${com.example.notes_app.data.Converters.formatDateForDisplay(book.lastReadDate)}"
         
-        // Set button visibility based on multiple entries
-        if (hasMultipleEntries) {
-            btnViewHistory.visibility = View.VISIBLE
-            btnHistorySpace.visibility = View.GONE
-        } else {
-            btnViewHistory.visibility = View.GONE
-            btnHistorySpace.visibility = View.VISIBLE
+        // Check if book has reading history entries
+        bookViewModel.getBookHistory(book.id).observe(this) { progressEntries ->
+            val hasHistory = progressEntries.size > 1
+            if (hasHistory) {
+                btnViewHistory.visibility = View.VISIBLE
+                btnHistorySpace.visibility = View.GONE
+            } else {
+                btnViewHistory.visibility = View.GONE
+                btnHistorySpace.visibility = View.VISIBLE
+            }
         }
         
         // Set click listeners
         btnUpdateProgress.setOnClickListener {
-            showUpdateProgressDialog(date, bookData)
+            showUpdateProgressDialog(book)
         }
         
         btnViewHistory.setOnClickListener {
             // Show book reading history
-            val title = parsedData["title"] ?: "Untitled"
             val intent = Intent(this, BookHistoryActivity::class.java)
-            intent.putExtra("BOOK_TITLE", title)
+            intent.putExtra("BOOK_ID", book.id)
+            intent.putExtra("BOOK_TITLE", book.title)
             startActivity(intent)
+        }
+        
+        // Set delete button click listener
+        btnDeleteBook.setOnClickListener {
+            showDeleteConfirmationDialog(book)
         }
 
         booksContainer.addView(bookView)
     }
 
-    private fun showUpdateProgressDialog(originalDate: String, originalBookData: String) {
+    private fun showUpdateProgressDialog(book: Book) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_update_progress, null)
         val editTextCurrentPage = dialogView.findViewById<EditText>(R.id.editTextCurrentPage)
         val spinnerReadingStatus = dialogView.findViewById<Spinner>(R.id.spinnerReadingStatus)
@@ -225,40 +209,29 @@ class BookLibraryActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerReadingStatus.adapter = adapter
         
-        // Parse book data
-        val bookData = parseBookData(originalBookData)
-        
         // Set current values
-        editTextCurrentPage.setText(bookData["currentPage"])
+        editTextCurrentPage.setText(book.currentPage.toString())
         
         // Set status if available
-        val oldStatus = bookData["status"] ?: ""
-        bookData["status"]?.let { status ->
-            val position = readingStatuses.indexOf(status)
+        val oldStatus = book.status
+        val position = readingStatuses.indexOf(book.status)
             if (position >= 0) {
                 spinnerReadingStatus.setSelection(position)
-            }
         }
         
-        // Set rating if available
-        bookData["rating"]?.toFloatOrNull()?.let { rating ->
-            ratingBar.rating = rating
-        }
-        
-        // Set review if available
-        bookData["review"]?.let { review ->
-            editTextReview.setText(review)
-        }
+        // Set rating and review
+        ratingBar.rating = book.rating
+        editTextReview.setText(book.review)
         
         // Set default date to today
-        var selectedDate = dateFormat.format(Date())
-        updateDateDisplay(textViewDate, selectedDate)
+        var selectedDate = Date()
+        textViewDate.text = "Date: ${displayDateFormat.format(selectedDate)}"
         
         // Date selection
         btnSelectDate.setOnClickListener {
             showDatePicker { newDate ->
                 selectedDate = newDate
-                updateDateDisplay(textViewDate, selectedDate)
+                textViewDate.text = "Date: ${displayDateFormat.format(selectedDate)}"
             }
         }
         
@@ -269,8 +242,8 @@ class BookLibraryActivity : AppCompatActivity() {
                 
                 // Show rating/review section when marking as completed or when there's already a review
                 ratingReviewContainer.visibility = if (selectedStatus == "Completed" || 
-                                                     bookData["rating"]?.isNotEmpty() == true || 
-                                                     bookData["review"]?.isNotEmpty() == true) 
+                                                     book.rating > 0 || 
+                                                     book.review.isNotEmpty()) 
                                                      View.VISIBLE else View.GONE
                 
                 // If user changes status to Completed, prompt to add a final review
@@ -285,8 +258,8 @@ class BookLibraryActivity : AppCompatActivity() {
         // Initially hide or show rating/review section based on status
         val initialStatus = spinnerReadingStatus.selectedItem.toString()
         ratingReviewContainer.visibility = if (initialStatus == "Completed" || 
-                                             bookData["rating"]?.isNotEmpty() == true || 
-                                             bookData["review"]?.isNotEmpty() == true) 
+                                             book.rating > 0 || 
+                                             book.review.isNotEmpty()) 
                                              View.VISIBLE else View.GONE
         
         // Create dialog with custom view and no buttons (we'll use our own)
@@ -297,29 +270,32 @@ class BookLibraryActivity : AppCompatActivity() {
         
         // Set up the custom button click listeners
         btnSave.setOnClickListener {
-            // Update book progress
-            val newCurrentPage = editTextCurrentPage.text.toString()
+            val newCurrentPage = editTextCurrentPage.text.toString().toIntOrNull() ?: 0
+            // Make sure book.totalPages is also an Int and not 0
             val newStatus = spinnerReadingStatus.selectedItem.toString()
-            val newRating = ratingBar.rating.toString()
+            val newRating = ratingBar.rating
             val newReview = editTextReview.text.toString()
+        
+            // Validate input
+            if (book.totalPages > 0 && newCurrentPage > book.totalPages) {
+                Toast.makeText(this, "Current page cannot exceed total pages", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             
-            // Create updated book data
-            val updatedBookData = createUpdatedBookData(
-                originalBookData, 
-                newCurrentPage, 
-                newStatus,
-                newRating,
-                newReview
+            // Use ViewModel to update the book
+            bookViewModel.updateBookProgress(
+                bookId = book.id,
+                currentPage = newCurrentPage,
+                status = newStatus,
+                rating = newRating,
+                review = newReview
             )
             
-            // Save to the selected date
-            notesManager.addNote(selectedDate, updatedBookData)
+            // Update reading streak
+            val dateStr = dateFormat.format(selectedDate)
+            bookViewModel.updateReadingStreak(dateStr)
             
-            // Mark the day as read
-            readingTracker.markDayAsRead(selectedDate)
-            
-            // Refresh the display
-            displayAllBooks()
+            Log.d("BookLibraryActivity", "Current page: $newCurrentPage, Total pages: ${book.totalPages}")
             
             Toast.makeText(this, "Reading progress updated", Toast.LENGTH_SHORT).show()
             
@@ -349,79 +325,7 @@ class BookLibraryActivity : AppCompatActivity() {
             .show()
     }
     
-    private fun createUpdatedBookData(
-        originalData: String, 
-        newCurrentPage: String, 
-        newStatus: String,
-        newRating: String,
-        newReview: String
-    ): String {
-        val data = parseBookData(originalData).toMutableMap()
-        
-        // Update the fields that changed
-        data["currentPage"] = newCurrentPage
-        data["status"] = newStatus
-        data["rating"] = newRating
-        data["review"] = newReview
-        
-        // If status changed to Completed, check if pages match total
-        if (newStatus == "Completed") {
-            val totalPages = data["pages"]
-            if (!totalPages.isNullOrEmpty() && totalPages != "0") {
-                // Set current page to total pages if completed
-                data["currentPage"] = totalPages
-            }
-        }
-        
-        // Format the updated book data
-        return formatBookData(
-            data["title"] ?: "",
-            data["author"] ?: "",
-            data["pages"] ?: "",
-            data["currentPage"] ?: "",
-            newStatus,
-            newRating,
-            newReview,
-            data["description"] ?: "",
-            data["coverImageUrl"] ?: ""
-        )
-    }
-    
-    private fun formatBookData(
-        title: String,
-        author: String,
-        pages: String,
-        currentPage: String,
-        status: String,
-        rating: String,
-        review: String,
-        description: String,
-        coverImageUrl: String = ""
-    ): String {
-        // Consistent, standardized format for all book data
-        return """
-            Title: $title
-            Author: $author
-            Total Pages: $pages
-            Current Page: $currentPage
-            Status: $status
-            Rating: $rating
-            Review: $review
-            Description: $description
-            CoverImageUrl: $coverImageUrl
-        """.trimIndent()
-    }
-    
-    private fun updateDateDisplay(textView: TextView, dateString: String) {
-        try {
-            val date = dateFormat.parse(dateString)
-            textView.text = "Date: ${displayDateFormat.format(date!!)}"
-        } catch (e: Exception) {
-            textView.text = "Date: $dateString"
-        }
-    }
-    
-    private fun showDatePicker(onDateSelected: (String) -> Unit) {
+    private fun showDatePicker(onDateSelected: (Date) -> Unit) {
         val calendar = Calendar.getInstance()
         
         // Don't allow future dates
@@ -438,8 +342,7 @@ class BookLibraryActivity : AppCompatActivity() {
                 if (selectedCalendar.after(today)) {
                     Toast.makeText(this, "Cannot select future dates", Toast.LENGTH_SHORT).show()
                 } else {
-                    val selectedDateStr = dateFormat.format(selectedCalendar.time)
-                    onDateSelected(selectedDateStr)
+                    onDateSelected(selectedCalendar.time)
                 }
             },
             calendar.get(Calendar.YEAR),
@@ -453,57 +356,24 @@ class BookLibraryActivity : AppCompatActivity() {
         datePickerDialog.show()
     }
 
-    private fun parseBookData(note: String): Map<String, String> {
-        val data = mutableMapOf<String, String>()
-        
-        // Initialize with empty default values
-        data["title"] = ""
-        data["author"] = ""
-        data["pages"] = ""
-        data["currentPage"] = ""
-        data["status"] = ""
-        data["rating"] = ""
-        data["review"] = ""
-        data["description"] = ""
-        
-        note.split("\n").forEach { line ->
-            try {
-                val parts = line.split(":", limit = 2)
-                if (parts.size == 2) {
-                    val key = parts[0].trim()
-                    val value = parts[1].trim()
-                    
-                    // Normalize keys for easier access
-                    when {
-                        key.equals("Title", ignoreCase = true) -> 
-                            data["title"] = value
-                        key.equals("Author", ignoreCase = true) -> 
-                            data["author"] = value
-                        key.equals("Total Pages", ignoreCase = true) || key.equals("Pages", ignoreCase = true) -> 
-                            data["pages"] = value
-                        key.equals("Current Page", ignoreCase = true) -> 
-                            data["currentPage"] = value
-                        key.equals("Status", ignoreCase = true) -> 
-                            data["status"] = value
-                        key.equals("Rating", ignoreCase = true) -> 
-                            data["rating"] = value
-                        key.equals("Review", ignoreCase = true) -> 
-                            data["review"] = value
-                        key.equals("Description", ignoreCase = true) -> 
-                            data["description"] = value
-                    }
-                }
-            } catch (e: Exception) {
-                // Skip invalid lines
-            }
-        }
-        return data
-    }
-
     // Helper method to set rating bar color
     private fun setRatingBarColor(ratingBar: RatingBar) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             ratingBar.progressTintList = ContextCompat.getColorStateList(this, R.color.streak)
         }
+    }
+
+    private fun showDeleteConfirmationDialog(book: Book) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Book")
+            .setMessage("Are you sure you want to delete \"${book.title}\"? This will also delete all reading progress history for this book.")
+            .setPositiveButton("Delete") { _, _ ->
+                // Delete the book using ViewModel
+                bookViewModel.deleteBook(book)
+                Toast.makeText(this, "\"${book.title}\" has been deleted", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .setCancelable(true)
+            .show()
     }
 } 
