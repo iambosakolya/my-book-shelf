@@ -40,4 +40,7 @@ interface BookDao {
     
     @Query("SELECT COUNT(*) FROM books")
     suspend fun getBooksCount(): Int
+    
+    @Query("SELECT * FROM books")
+    suspend fun getAllBooksDirect(): List<Book>
 } 

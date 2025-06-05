@@ -47,4 +47,7 @@ interface BookProgressDao {
     
     @Query("SELECT COUNT(DISTINCT bookId) FROM book_progress WHERE date = :date")
     suspend fun getBooksReadOnDate(date: Date): Int
+    
+    @Query("DELETE FROM book_progress")
+    suspend fun deleteAllProgress()
 } 

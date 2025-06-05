@@ -327,4 +327,40 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         }
         return count
     }
+    
+    // Function to sync book progress table
+    fun syncBookProgressTable() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Get all books directly from the database
+                val database = AppDatabase.getDatabase(getApplication())
+                val allBooks = database.bookDao().getAllBooksDirect()
+                
+                // Clear existing progress entries
+                database.bookProgressDao().deleteAllProgress()
+                
+                // Create one progress entry for each book
+                val now = Date()
+                for (book in allBooks) {
+                    Log.d("BookViewModel", "Creating progress entry for book: ${book.title} (ID: ${book.id})")
+                    
+                    // Create progress entry
+                    val progress = BookProgress(
+                        bookId = book.id,
+                        currentPage = book.currentPage,
+                        status = book.status,
+                        date = now
+                    )
+                    
+                    // Insert progress
+                    database.bookProgressDao().insertProgress(progress)
+                }
+                
+                Log.d("BookViewModel", "Book progress table synchronized successfully")
+            } catch (e: Exception) {
+                Log.e("BookViewModel", "Error syncing book progress table: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+    }
 } 

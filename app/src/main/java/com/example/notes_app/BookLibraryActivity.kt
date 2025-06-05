@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -18,6 +19,7 @@ import com.bumptech.glide.Glide
 import com.example.notes_app.data.Book
 import com.example.notes_app.ui.BookViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,14 +35,23 @@ class BookLibraryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_library)
 
-        // Initialize ViewModel
-        bookViewModel = ViewModelProvider(this)[BookViewModel::class.java]
+        booksContainer = findViewById(R.id.booksContainer)
+        
+        // Initialize BookViewModel
+        bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
+        
+        // Sync book progress table to fix any inconsistencies
+        bookViewModel.syncBookProgressTable()
+        
+        // Set up the filter spinner
+        setupFilterSpinner()
 
         // Initialize UI Components
-        booksContainer = findViewById(R.id.booksContainer)
         val btnAddNewBook = findViewById<Button>(R.id.btnAddNewBook)
         val btnMyReviews = findViewById<Button>(R.id.btnMyReviews)
         val btnBack = findViewById<Button>(R.id.btnBack)
+        val btnSearch = findViewById<Button>(R.id.btnSearch)
+        val btnSyncProgress = findViewById<Button>(R.id.btnSyncProgress)
 
         // Observe books
         bookViewModel.allBooks.observe(this) { books ->
@@ -63,6 +74,28 @@ class BookLibraryActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener {
             finish() // Return to previous activity
+        }
+
+        btnSearch.setOnClickListener {
+            val intent = Intent(this, BookSearchActivity::class.java)
+            val dateString = dateFormat.format(Date())
+            intent.putExtra("selected_date", dateString)
+            startActivity(intent)
+        }
+
+        btnSyncProgress.setOnClickListener {
+            // Show a progress indicator or message
+            Toast.makeText(this, "Synchronizing progress data...", Toast.LENGTH_SHORT).show()
+            
+            // Call the sync function
+            bookViewModel.syncBookProgressTable()
+            
+            // Refresh the book list after sync
+            lifecycleScope.launch {
+                delay(1000) // Give it a moment to complete
+                refreshBookList()
+                Toast.makeText(this@BookLibraryActivity, "Progress data synchronized!", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -375,5 +408,61 @@ class BookLibraryActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setCancelable(true)
             .show()
+    }
+
+    private fun setupFilterSpinner() {
+        val spinnerFilter = findViewById<Spinner>(R.id.spinnerFilter)
+        val filterOptions = arrayOf("All Books", "Not Started", "In Progress", "Completed")
+        
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filterOptions)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerFilter.adapter = adapter
+        
+        spinnerFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                booksContainer.removeAllViews()
+                
+                when (position) {
+                    0 -> bookViewModel.allBooks.observe(this@BookLibraryActivity) { books ->
+                        displayBooks(books)
+                    }
+                    1 -> bookViewModel.notStartedBooks.observe(this@BookLibraryActivity) { books ->
+                        displayBooks(books)
+                    }
+                    2 -> bookViewModel.inProgressBooks.observe(this@BookLibraryActivity) { books ->
+                        displayBooks(books)
+                    }
+                    3 -> bookViewModel.completedBooks.observe(this@BookLibraryActivity) { books ->
+                        displayBooks(books)
+                    }
+                }
+            }
+            
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
+        }
+    }
+    
+    private fun refreshBookList() {
+        // Clear the container
+        booksContainer.removeAllViews()
+        
+        // Re-observe books based on current filter
+        val selectedFilter = findViewById<Spinner>(R.id.spinnerFilter).selectedItemPosition
+        when (selectedFilter) {
+            0 -> bookViewModel.allBooks.observe(this) { books ->
+                displayBooks(books)
+            }
+            1 -> bookViewModel.notStartedBooks.observe(this) { books ->
+                displayBooks(books)
+            }
+            2 -> bookViewModel.inProgressBooks.observe(this) { books ->
+                displayBooks(books)
+            }
+            3 -> bookViewModel.completedBooks.observe(this) { books ->
+                displayBooks(books)
+            }
+        }
     }
 } 
